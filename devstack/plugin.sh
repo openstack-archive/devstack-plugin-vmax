@@ -5,12 +5,11 @@
 
 function configure_port_groups {
     local be_name=$1
-    dell_emc_temp="DELL_EMC_${be_name}_PortGroup1"
     echo "<PortGroups>" >> \
         ${CINDER_CONF_DIR}/cinder_dell_emc_config_$be_name.xml
-    dell_emc_temp="DELL_EMC_${be_name}_PortGroup"
+    dell_emc_temp="${be_name}_PortGroup"
     dell_emc_portGroups=0
-    for i in ${!DELL_EMC_VMAX*}; do
+    for i in ${!VMAX*}; do
         temp1=${i##${dell_emc_temp}}
         if [[ "$temp1" == "$i" ]]; then
             continue
@@ -21,7 +20,7 @@ function configure_port_groups {
         fi
     done
     for (( m=1 ; m<=dell_emc_portGroups ; m++ )) ; do
-        dell_emc_temp="DELL_EMC_${be_name}_PortGroup${m}"
+        dell_emc_temp="${be_name}_PortGroup${m}"
         echo "<PortGroup>${!dell_emc_temp}</PortGroup>" >> \
         ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
     done
@@ -33,7 +32,7 @@ function configure_single_pool {
     local be_name=$1
     for val in "RestServerIp" "RestServerPort" "RestUserName" "RestPassword"\
     "Array" "SRP" "SSLVerify" ; do
-        dell_emc_temp="DELL_EMC_${be_name}_${val}"
+        dell_emc_temp="${be_name}_${val}"
         if [  -n "${!dell_emc_temp}" ]; then
             echo "<${val}>${!dell_emc_temp}</${val}>" >> \
             ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
@@ -46,7 +45,7 @@ function configure_cinder_backend_dell_emc {
     local be_name=$1
     local emc_multi=${be_name%%_*}
     iniset ${CINDER_CONF} ${be_name} volume_backend_name ${be_name}
-    storage_proto="DELL_EMC_${be_name}_StorageProtocol"
+    storage_proto="${be_name}_StorageProtocol"
     vmax_directory="cinder.volume.drivers.dell_emc.vmax."
     if [[ "${!storage_proto}" == "iSCSI" ]];
     then
@@ -69,8 +68,8 @@ function configure_cinder_backend_dell_emc {
 
     configure_single_pool ${be_name}
 
-    echo "</EMC>" >> ${CINDER_CONF_DIR}/cinder_dell_emc_config_$be_name.xml
-    ${CINDER_CONF_DIR}/cinder_dell_emc_config_$be_name.xml
+    echo "</EMC>" >> ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
+    ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
     if [ ! -f "$CINDER_CONF_DIR/cinder_emc_config.xml" ]; then
        ln -s ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml \
        ${CINDER_CONF_DIR}/cinder_emc_config.xml
