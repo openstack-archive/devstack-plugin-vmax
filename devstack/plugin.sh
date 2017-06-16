@@ -41,7 +41,7 @@ function configure_single_pool {
     configure_port_groups ${be_name}
 }
 
-function configure_cinder_backend_dell_emc {
+function configure_cinder_backend_vmax {
     local be_name=$1
     local emc_multi=${be_name%%_*}
     iniset ${CINDER_CONF} ${be_name} volume_backend_name ${be_name}
