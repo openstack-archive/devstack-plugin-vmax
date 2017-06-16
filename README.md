@@ -3,5 +3,8 @@ This plugin enables the VMAX backend for cinder. For each backend, it creates th
 
 # Enabling in devstack
 * Add this repo as an external repository to localrc::
-  enable_plugin vmax https://github.com/okpoyu/devstack-plugin-vmax
-* run ./stack.sh
+
+     [[local|localrc]]</br>
+     enable_plugin vmax https://github.com/okpoyu/devstack-plugin-vmax
+
+* run "stack.sh"
