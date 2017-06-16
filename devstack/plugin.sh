@@ -3,14 +3,46 @@
 # devstack/plugin.sh
 # Setup VMAX as backend for Devstack
 
+function create_volume_types {
+    # Create volume types
+    if is_service_enabled c-api && [[ -n "$CINDER_ENABLED_BACKENDS" ]]; then
+        local be be_name
+        for be in ${CINDER_ENABLED_BACKENDS//,/ }; do
+            be_name=${be##*:}
+            be_type=${be%%:*}
+            array="${be_name}_Array"
+            srp="${be_name}_SRP"
+            slo="None"
+            workload="None"
+            pool_name=${!srp}+${!array}
+            vmax_temp="${be_name}_WORKLOAD"
+            if [  -n "${!vmax_temp}" ]; then
+                workload="${be_name}_WORKLOAD"
+                pool_name=${!workload}+${pool_name}
+            else
+                pool_name=${workload}+${pool_name}
+            fi
+            vmax_temp="${be_name}_SLO"
+            if [  -n "${!vmax_temp}" ]; then
+                slo="${be_name}_SLO"
+                pool_name=${!slo}+${pool_name}
+            else
+                pool_name=${slo}+${pool_name}
+            fi
+            openstack --os-region-name="$REGION_NAME" volume type create --property volume_backend_name="${be_name}" pool_name="${pool_name}" {be_name}
+
+        done
+    fi
+}
+
 function configure_port_groups {
     local be_name=$1
     echo "<PortGroups>" >> \
         ${CINDER_CONF_DIR}/cinder_dell_emc_config_$be_name.xml
-    dell_emc_temp="${be_name}_PortGroup"
+    vmax_temp="${be_name}_PortGroup"
     dell_emc_portGroups=0
     for i in ${!VMAX*}; do
-        temp1=${i##${dell_emc_temp}}
+        temp1=${i##${vmax_temp}}
         if [[ "$temp1" == "$i" ]]; then
             continue
         fi
@@ -20,8 +52,8 @@ function configure_port_groups {
         fi
     done
     for (( m=1 ; m<=dell_emc_portGroups ; m++ )) ; do
-        dell_emc_temp="${be_name}_PortGroup${m}"
-        echo "<PortGroup>${!dell_emc_temp}</PortGroup>" >> \
+        vmax_temp="${be_name}_PortGroup${m}"
+        echo "<PortGroup>${!vmax_temp}</PortGroup>" >> \
         ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
     done
     echo "</PortGroups>" >> \
@@ -32,9 +64,9 @@ function configure_single_pool {
     local be_name=$1
     for val in "RestServerIp" "RestServerPort" "RestUserName" "RestPassword"\
     "Array" "SRP" "SSLVerify" ; do
-        dell_emc_temp="${be_name}_${val}"
-        if [  -n "${!dell_emc_temp}" ]; then
-            echo "<${val}>${!dell_emc_temp}</${val}>" >> \
+        vmax_temp="${be_name}_${val}"
+        if [  -n "${!vmax_temp}" ]; then
+            echo "<${val}>${!vmax_temp}</${val}>" >> \
             ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
         fi
     done
