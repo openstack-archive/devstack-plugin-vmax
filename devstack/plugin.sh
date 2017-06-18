@@ -4,12 +4,11 @@
 # Setup VMAX as backend for Devstack
 
 function update_volume_type {
-    # Create volume types
-    if is_service_enabled c-api && [[ -n "$CINDER_ENABLED_BACKENDS" ]]; then
-        local be be_name
-        for be in ${CINDER_ENABLED_BACKENDS//,/ }; do
-            be_name=${be##*:}
-            be_type=${be%%:*}
+# Update volume types
+    for be in ${CINDER_ENABLED_BACKENDS//,/ }; do
+        be_name=${be##*:}
+        be_type=${be%%:*}
+        if [[ ${be_type} == "vmax" ]]; then
             array="${be_name}_Array"
             srp="${be_name}_SRP"
             slo="None"
@@ -29,11 +28,9 @@ function update_volume_type {
             else
                 pool_name=${slo}+${pool_name}
             fi
-            #openstack --os-region-name="$REGION_NAME" volume type create
-            # --property volume_backend_name="${be_name}" --property pool_name="${pool_name}" ${be_name}
             openstack volume type set --property pool_name="${pool_name}" ${be_name}
-        done
-    fi
+        fi
+    done
 }
 
 function configure_port_groups {
