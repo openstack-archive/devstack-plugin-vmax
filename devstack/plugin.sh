@@ -29,7 +29,7 @@ function create_volume_types {
             else
                 pool_name=${slo}+${pool_name}
             fi
-            openstack --os-region-name="$REGION_NAME" volume type create --property volume_backend_name="${be_name}" pool_name="${pool_name}" {be_name}
+            openstack --os-region-name="$REGION_NAME" volume type create --property volume_backend_name="${be_name}" --property pool_name="${pool_name}" {be_name}
 
         done
     fi
