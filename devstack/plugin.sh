@@ -3,7 +3,7 @@
 # devstack/plugin.sh
 # Setup VMAX as backend for Devstack
 
-function create_volume_types {
+function update_volume_type {
     # Create volume types
     if is_service_enabled c-api && [[ -n "$CINDER_ENABLED_BACKENDS" ]]; then
         local be be_name
@@ -29,8 +29,9 @@ function create_volume_types {
             else
                 pool_name=${slo}+${pool_name}
             fi
-            openstack --os-region-name="$REGION_NAME" volume type create --property volume_backend_name="${be_name}" --property pool_name="${pool_name}" ${be_name}
-
+            #openstack --os-region-name="$REGION_NAME" volume type create
+            # --property volume_backend_name="${be_name}" --property pool_name="${pool_name}" ${be_name}
+            openstack volume type set --property pool_name="${pool_name}" ${be_name}
         done
     fi
 }
@@ -106,3 +107,29 @@ function configure_cinder_backend_vmax {
        ${CINDER_CONF_DIR}/cinder_emc_config.xml
     fi
 }
+
+if [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
+    # no-op
+    :
+elif [[ "$1" == "stack" && "$2" == "install" ]]; then
+    # no-op
+    :
+elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+    # no-op
+    :
+elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
+    update_volume_type
+elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
+    # no-op
+    :
+fi
+
+if [[ "$1" == "unstack" ]]; then
+    # no-op
+    :
+fi
+
+if [[ "$1" == "clean" ]]; then
+    # no-op
+:
+fi
