@@ -28,7 +28,8 @@ function update_volume_type {
             else
                 pool_name=${slo}+${pool_name}
             fi
-            openstack volume type set --property pool_name="${pool_name}" ${be_name}
+            openstack volume type set --property pool_name="${pool_name}" \
+            ${be_name}
         fi
     done
 }
@@ -77,13 +78,11 @@ function configure_cinder_backend_vmax {
     iniset ${CINDER_CONF} ${be_name} volume_backend_name ${be_name}
     storage_proto="${be_name}_StorageProtocol"
     vmax_directory="cinder.volume.drivers.dell_emc.vmax."
-    if [[ "${!storage_proto}" == "iSCSI" ]];
-    then
+    if [[ "${!storage_proto}" == "iSCSI" ]]; then
         iniset ${CINDER_CONF} ${be_name} volume_driver \
         "${vmax_directory}iscsi.VMAXISCSIDriver"
     fi
-    if [ "${!storage_proto}" = "FC" ]
-    then
+    if [ "${!storage_proto}" = "FC" ]; then
         iniset ${CINDER_CONF} ${be_name} volume_driver \
         "${vmax_directory}fc.VMAXFCDriver"
     fi
@@ -100,8 +99,8 @@ function configure_cinder_backend_vmax {
 
     echo "</EMC>" >> ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
     if [ ! -f "$CINDER_CONF_DIR/cinder_emc_config.xml" ]; then
-       ln -s ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml \
-       ${CINDER_CONF_DIR}/cinder_emc_config.xml
+        ln -s ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml \
+            ${CINDER_CONF_DIR}/cinder_emc_config.xml
     fi
 }
 
