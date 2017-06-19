@@ -3,37 +3,6 @@
 # devstack/plugin.sh
 # Setup VMAX as backend for Devstack
 
-function update_volume_type {
-# Update volume types
-    for be in ${CINDER_ENABLED_BACKENDS//,/ }; do
-        be_name=${be##*:}
-        be_type=${be%%:*}
-        if [[ ${be_type} == "vmax" ]]; then
-            array="${be_name}_Array"
-            srp="${be_name}_SRP"
-            slo="None"
-            workload="None"
-            pool_name=${!srp}+${!array}
-            vmax_temp="${be_name}_WORKLOAD"
-            if [  -n "${!vmax_temp}" ]; then
-                workload="${be_name}_WORKLOAD"
-                pool_name=${!workload}+${pool_name}
-            else
-                pool_name=${workload}+${pool_name}
-            fi
-            vmax_temp="${be_name}_SLO"
-            if [  -n "${!vmax_temp}" ]; then
-                slo="${be_name}_SLO"
-                pool_name=${!slo}+${pool_name}
-            else
-                pool_name=${slo}+${pool_name}
-            fi
-            openstack volume type set --property pool_name="${pool_name}" \
-            ${be_name}
-        fi
-    done
-}
-
 function configure_port_groups {
     local be_name=$1
     echo "<PortGroups>" >> \
@@ -61,14 +30,20 @@ function configure_port_groups {
 
 function configure_single_pool {
     local be_name=$1
-    for val in "RestServerIp" "RestServerPort" "RestUserName" "RestPassword"\
-    "Array" "SRP" "SSLVerify" ; do
+    for val in "EcomServerIp" "EcomServerPort" "EcomUserName" "EcomPassword"\
+    "Array" "Pool" "Retries" "Interval" "ServiceLevel" "Workload" "FastPolicy";
+    do
         vmax_temp="${be_name}_${val}"
         if [  -n "${!vmax_temp}" ]; then
             echo "<${val}>${!vmax_temp}</${val}>" >> \
             ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
         fi
     done
+    vmax_temp="${be_name}_SLO"
+    if [  -n "${!vmax_temp}" ]; then
+        echo "<ServiceLevel>${!vmax_temp}</ServiceLevel>" >> \
+        ${CINDER_CONF_DIR}/cinder_emc_config_${be_name}.xml
+    fi
     configure_port_groups ${be_name}
 }
 
@@ -86,7 +61,7 @@ function configure_cinder_backend_vmax {
         iniset ${CINDER_CONF} ${be_name} volume_driver \
         "${vmax_directory}fc.VMAXFCDriver"
     fi
-
+    iniset ${CINDER_CONF} ${be_name} driver_use_ssl "True"
     iniset ${CINDER_CONF} ${be_name} cinder_dell_emc_config_file \
     "$CINDER_CONF_DIR/cinder_dell_emc_config_$be_name.xml"
 
@@ -98,34 +73,8 @@ function configure_cinder_backend_vmax {
     configure_single_pool ${be_name}
 
     echo "</EMC>" >> ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
-    if [ ! -f "$CINDER_CONF_DIR/cinder_emc_config.xml" ]; then
+    if [ ! -f "$CINDER_CONF_DIR/cinder_dell_emc_config.xml" ]; then
         ln -s ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml \
-            ${CINDER_CONF_DIR}/cinder_emc_config.xml
+            ${CINDER_CONF_DIR}/cinder_dell_emc_config.xml
     fi
 }
-
-if [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
-    # no-op
-    :
-elif [[ "$1" == "stack" && "$2" == "install" ]]; then
-    # no-op
-    :
-elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
-    # no-op
-    :
-elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
-    update_volume_type
-elif [[ "$1" == "stack" && "$2" == "post-extra" ]]; then
-    # no-op
-    :
-fi
-
-if [[ "$1" == "unstack" ]]; then
-    # no-op
-    :
-fi
-
-if [[ "$1" == "clean" ]]; then
-    # no-op
-:
-fi
