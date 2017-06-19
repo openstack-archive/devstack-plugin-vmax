@@ -10,12 +10,14 @@ This plugin enables the VMAX backend for cinder. For each backend, it creates th
 * For each vmax cinder backend to be used in the devstack setup, add the
 backend name to the enabled backends in localrc as shown below. Backend name
  has to start with VMAX::
+
     [[local|localrc]]</br>
     CINDER_ENABLED_BACKENDS=vmax:VMAX_Backend_1,vmax:VMAX_Backend_2
 
 * For each vmax backend in CINDER_ENABLED_BACKENDS above, append the
 configuration details to localrc as shown below for VMAX_Backend_1. Contact
 your Storage Admin for your parameters::
+
     VMAX_Backend_1_RestServerIp=<insert_ip_address></br>
     VMAX_Backend_1_RestServerPort=<Rest_port_number></br>
     VMAX_Backend_1_RestUserName=<Rest_password></br>
