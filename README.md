@@ -5,7 +5,7 @@ This plugin enables the VMAX backend for cinder. For each backend, it creates th
 * Add this repo as an external repository to localrc::
 
      [[local|localrc]]</br>
-     enable_plugin devstack-plugin-vmax https://github.com/okpoyu/devstack-plugin-vmax
+     enable_plugin devstack-plugin-vmax https://github.com/openstack/devstack-plugin-vmax
 
 * For each vmax cinder backend to be used in the devstack setup, add the
 backend name to the enabled backends in localrc as shown below. Backend name
@@ -22,7 +22,7 @@ your Storage Admin for your parameters::
     VMAX_Backend_1_RestServerPort=<Rest_port_number></br>
     VMAX_Backend_1_RestUserName=<Rest_password></br>
     VMAX_Backend_1_Array=<Array_to_use></br>
-    VMAX_Backend_1_SRP=<insert_ip_address></br>
+    VMAX_Backend_1_SRP=<storage_resource_pool></br>
     VMAX_Backend_1_WORKLOAD=<work_load></br>
     VMAX_Backend_1_SLO=<Service_level></br>
     VMAX_Backend_1_SSLVerify=<pem_file_for_ssl_verification></br>
