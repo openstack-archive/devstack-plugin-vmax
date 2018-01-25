@@ -36,8 +36,6 @@ function update_volume_type {
 
 function configure_port_groups {
     local be_name=$1
-    echo "<PortGroups>" >> \
-        ${CINDER_CONF_DIR}/cinder_dell_emc_config_$be_name.xml
     vmax_temp="${be_name}_PortGroup"
     dell_emc_portGroups=0
     for i in ${!VMAX*}; do
@@ -50,32 +48,55 @@ function configure_port_groups {
             dell_emc_portGroups=${arrIN[0]}
         fi
     done
+    pg_list="["
     for (( m=1 ; m<=dell_emc_portGroups ; m++ )) ; do
         vmax_temp="${be_name}_PortGroup${m}"
-        echo "<PortGroup>${!vmax_temp}</PortGroup>" >> \
-        ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
+        pg_list="${pg_list}${!vmax_temp}"
+        if (( m!=dell_emc_portGroups )) ; then
+            pg_list="${pg_list},"
+        fi
     done
-    echo "</PortGroups>" >> \
-        ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
+    pg_list="${pg_list}]"
+    iniset ${CINDER_CONF} ${be_name} vmax_port_groups ${pg_list}
 }
 
 function configure_single_pool {
     local be_name=$1
-    for val in "RestServerIp" "RestServerPort" "RestUserName" "RestPassword"\
-    "Array" "SRP" "SSLVerify" ; do
+    configure_port_groups ${be_name}
+    for val in "SSLVerify"  "Array" "SRP" "RestPassword" "RestUserName"\
+    "RestServerPort" "RestServerIp" ; do
         vmax_temp="${be_name}_${val}"
         if [  -n "${!vmax_temp}" ]; then
-            echo "<${val}>${!vmax_temp}</${val}>" >> \
-            ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
+            if [[ "${val}" == "RestServerIp" ]]; then
+               iniset ${CINDER_CONF} ${be_name} san_ip ${!vmax_temp}
+            elif [[ "${val}" == "RestServerPort" ]]; then
+                iniset ${CINDER_CONF} ${be_name} san_rest_port ${!vmax_temp}
+            elif [[ "${val}" == "RestUserName" ]]; then
+                iniset ${CINDER_CONF} ${be_name} san_login ${!vmax_temp}
+            elif [[ "${val}" == "RestPassword" ]]; then
+                iniset ${CINDER_CONF} ${be_name} san_password ${!vmax_temp}
+            elif [[ "${val}" == "Array" ]]; then
+                iniset ${CINDER_CONF} ${be_name} vmax_array ${!vmax_temp}
+            elif [[ "${val}" == "SRP" ]]; then
+                iniset ${CINDER_CONF} ${be_name} vmax_srp ${!vmax_temp}
+            elif [[ "${val}" == "SSLVerify" ]]; then
+                if [[ "${!vmax_temp}" != "False" ]]; then
+                    iniset ${CINDER_CONF} ${be_name} driver_ssl_cert_verify \
+                    True
+                    iniset ${CINDER_CONF} ${be_name} driver_ssl_cert_path \
+                    ${!vmax_temp}
+                fi
+            fi
         fi
     done
-    configure_port_groups ${be_name}
 }
 
 function configure_cinder_backend_vmax {
     local be_name=$1
     local emc_multi=${be_name%%_*}
-    iniset ${CINDER_CONF} ${be_name} volume_backend_name ${be_name}
+
+    configure_single_pool ${be_name}
+
     storage_proto="${be_name}_StorageProtocol"
     vmax_directory="cinder.volume.drivers.dell_emc.vmax."
     if [[ "${!storage_proto}" == "iSCSI" ]]; then
@@ -86,22 +107,7 @@ function configure_cinder_backend_vmax {
         iniset ${CINDER_CONF} ${be_name} volume_driver \
         "${vmax_directory}fc.VMAXFCDriver"
     fi
-
-    iniset ${CINDER_CONF} ${be_name} cinder_dell_emc_config_file \
-    "$CINDER_CONF_DIR/cinder_dell_emc_config_$be_name.xml"
-
-    touch ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
-    echo "<?xml version='1.0' encoding='UTF-8'?>" > \
-    ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
-    echo "<EMC>" >> ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
-
-    configure_single_pool ${be_name}
-
-    echo "</EMC>" >> ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml
-    if [ ! -f "$CINDER_CONF_DIR/cinder_dell_emc_config.xml" ]; then
-        ln -s ${CINDER_CONF_DIR}/cinder_dell_emc_config_${be_name}.xml \
-            ${CINDER_CONF_DIR}/cinder_dell_emc_config.xml
-    fi
+    iniset ${CINDER_CONF} ${be_name} volume_backend_name ${be_name}
 }
 
 if [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
