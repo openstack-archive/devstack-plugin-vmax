@@ -1,5 +1,5 @@
 # devstack-plugin-vmax
-This plugin enables the VMAX backend for cinder. For each backend, it creates the required xml file, populating said file along with cinder.conf with the appropriate values
+This plugin enables the VMAX backend for cinder Rocky. For each backend, it creates the required xml file, populating said file along with cinder.conf with the appropriate values
 
 # Enabling in devstack
 * Add this repo as an external repository to localrc::
